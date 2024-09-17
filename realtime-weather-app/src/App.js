@@ -135,40 +135,52 @@ const Refresh = styled.div`
 const DayCloudy = styled(DayCloudyIcon)`
   flex-basis: 30%;
   `;
+const API_KEY = process.env.REACT_APP_CWB_API_AUTH_KEY
+const LOCATION_NAME = '臺北'
+const LOCATION_NAME_FORECAST = '臺北市';
+
+const fetchWeatherForecast = () => {
+  return fetch(
+    `https://opendata.cwa.gov.tw/api/v1/rest/datastore/F-C0032-001?Authorization=${API_KEY}&locationName=${LOCATION_NAME_FORECAST}`
+  )
+    .then((response) => response.json())
+    .then((data) => {
+      const locationData = data.records.location[0];
+      const weatherElements = locationData.weatherElement.reduce(
+        (neededElements, item) => {
+          if (['Wx', 'PoP', 'CI'].includes(item.elementName)) {
+            neededElements[item.elementName] = item.time[0].parameter;
+          }
+          return neededElements;
+        },
+        {}
+      );
+      return {
+        description: weatherElements.Wx.parameterName,
+        weatherCode: weatherElements.Wx.parameterValue,
+        rainPossibility: weatherElements.PoP.parameterName,
+        comfortability: weatherElements.CI.parameterName,
+      };
+    });
+  }
+
+  const fetchCurrentWeather = () => {
+    return fetch(`https://opendata.cwa.gov.tw/api/v1/rest/datastore/O-A0003-001?Authorization=${API_KEY}&StationName=${LOCATION_NAME}`)
+    .then((response) => response.json())
+    .then((data) => {
+      const locationData = data.records.Station[0];
+      return {
+        observationTime: locationData.ObsTime.DateTime,
+        locationName: locationData.StationName,
+        temperature: locationData.WeatherElement.AirTemperature,
+        windSpeed: locationData.WeatherElement.WindSpeed,
+      };  
+    });
+  }
+
 
 const App = () => {
-  const API_KEY = process.env.REACT_APP_CWB_API_AUTH_KEY
-  const LOCATION_NAME = '臺北'
   const [currentTheme, setCurrentTheme] = useState("light");
-
-  const LOCATION_NAME_FORECAST = '臺北市';
-  const fetchWeatherForecast = () => {
-    fetch(
-      `https://opendata.cwa.gov.tw/api/v1/rest/datastore/F-C0032-001?Authorization=${API_KEY}&locationName=${LOCATION_NAME_FORECAST}`
-    )
-      .then((response) => response.json())
-      .then((data) => {
-        const locationData = data.records.location[0];
-
-        const weatherElements = locationData.weatherElement.reduce(
-          (neededElements, item) => {
-            if (['Wx', 'PoP', 'CI'].includes(item.elementName)) {
-              neededElements[item.elementName] = item.time[0].parameter;
-            }
-            return neededElements;
-          },
-          {}
-        );
-        setWeatherElement((prevState) => ({
-          ...prevState,
-          description: weatherElements.Wx.parameterName,
-          weatherCode: weatherElements.Wx.parameterValue,
-          rainPossibility: weatherElements.PoP.parameterName,
-          comfortability: weatherElements.CI.parameterName,
-        }));
-      });
-    }
-
   const [weatherElement, setWeatherElement] = useState({
     observationTime: new Date(),
     locationName: '',
@@ -182,33 +194,25 @@ const App = () => {
   });
 
   useEffect(() => {
-    console.log('execute function in useEffect');
-    fetchCurrentWeather();
-    fetchWeatherForecast();
-  }, []);
-
-  const fetchCurrentWeather = () => {
-    setWeatherElement((prevState) => ({
-      ...prevState,
-      isLoading: true
-    }));
-
-    fetch(`https://opendata.cwa.gov.tw/api/v1/rest/datastore/O-A0003-001?Authorization=${API_KEY}&StationName=${LOCATION_NAME}`)
-    .then((response) => response.json())
-    .then((data) => {
-      const locationData = data.records.Station[0];
+    const fetchData = async () => {
       setWeatherElement((prevState) => ({
         ...prevState,
-        observationTime: locationData.ObsTime.DateTime,
-        locationName: locationData.StationName,
-        temperature: locationData.WeatherElement.AirTemperature,
-        windSpeed: locationData.WeatherElement.WindSpeed,
-        isLoading: false
+        isLoading: true
       }));
-      
-    });
+      const [currentWeather, weatherForecast] = await Promise.all([
+        fetchCurrentWeather(),
+        fetchWeatherForecast(),
+      ]);
+      setWeatherElement({
+        ...currentWeather,
+        ...weatherForecast,
+        isLoading: false,
+      });
+    };
+    fetchData();
+  }, []);
 
-  }
+  
 
   const {
     observationTime,
