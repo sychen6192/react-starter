@@ -3,7 +3,7 @@ import { ThemeProvider } from '@emotion/react';
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { getMoment } from './utils/helpers';
 import WeatherCard from './views/WeatherCard';
-
+import useWeatherAPI from './hooks/useWeatherAPI';
 
 const theme = {
   light: {
@@ -37,85 +37,19 @@ const API_KEY = process.env.REACT_APP_CWB_API_AUTH_KEY
 const LOCATION_NAME = '臺北'
 const LOCATION_NAME_FORECAST = '臺北市';
 
-const fetchWeatherForecast = () => {
-  return fetch(
-    `https://opendata.cwa.gov.tw/api/v1/rest/datastore/F-C0032-001?Authorization=${API_KEY}&locationName=${LOCATION_NAME_FORECAST}`
-  )
-    .then((response) => response.json())
-    .then((data) => {
-      const locationData = data.records.location[0];
-      const weatherElements = locationData.weatherElement.reduce(
-        (neededElements, item) => {
-          if (['Wx', 'PoP', 'CI'].includes(item.elementName)) {
-            neededElements[item.elementName] = item.time[0].parameter;
-          }
-          return neededElements;
-        },
-        {}
-      );
-      return {
-        description: weatherElements.Wx.parameterName,
-        weatherCode: weatherElements.Wx.parameterValue,
-        rainPossibility: weatherElements.PoP.parameterName,
-        comfortability: weatherElements.CI.parameterName,
-      };
-    });
-  }
-
-  const fetchCurrentWeather = () => {
-    return fetch(`https://opendata.cwa.gov.tw/api/v1/rest/datastore/O-A0003-001?Authorization=${API_KEY}&StationName=${LOCATION_NAME}`)
-    .then((response) => response.json())
-    .then((data) => {
-      const locationData = data.records.Station[0];
-      return {
-        observationTime: locationData.ObsTime.DateTime,
-        locationName: locationData.StationName,
-        temperature: locationData.WeatherElement.AirTemperature,
-        windSpeed: locationData.WeatherElement.WindSpeed,
-      };  
-    });
-  }
-
 
 const App = () => {
   const [currentTheme, setCurrentTheme] = useState("dark");
-  const [weatherElement, setWeatherElement] = useState({
-    observationTime: new Date(),
-    locationName: '',
-    temperature: 0,
-    windSpeed: 0,
-    description: '',
-    weatherCode: 0,
-    rainPossibility: 0,
-    comfortability: '',
-    isLoading: true,
+  const [weatherElement, fetchData] = useWeatherAPI({
+    locationName: LOCATION_NAME,
+    cityName: LOCATION_NAME_FORECAST,
+    authorizationKey: API_KEY,
   });
   const moment = useMemo(() => getMoment(LOCATION_NAME_FORECAST), []);
-
-  const fetchData = useCallback(async () => {
-    setWeatherElement((prevState) => ({
-      ...prevState,
-      isLoading: true
-    }));
-    const [currentWeather, weatherForecast] = await Promise.all([
-      fetchCurrentWeather(),
-      fetchWeatherForecast(),
-    ]);
-    setWeatherElement({
-      ...currentWeather,
-      ...weatherForecast,
-      isLoading: false,
-    });
-  }, []);
-
-  useEffect(() => {
-    fetchData();
-  }, [fetchData]);
 
   useEffect(() => {
     setCurrentTheme(moment === 'day' ? 'light': 'dark');
   },[moment]);
-
   return (
     <ThemeProvider theme={theme[currentTheme]}>
       <Container>
