@@ -38,8 +38,9 @@ const Container = styled.div`
 const API_KEY = process.env.REACT_APP_CWB_API_AUTH_KEY
 
 const App = () => {
+  const storageCity = localStorage.getItem('cityName') || '臺北市';
   const [currentTheme, setCurrentTheme] = useState("dark");
-  const [currentCity, setCurrentCity] = useState('臺北市');
+  const [currentCity, setCurrentCity] = useState(storageCity);
   const currentLocation = useMemo(() => findLocation(currentCity), [
     currentCity,
   ]);

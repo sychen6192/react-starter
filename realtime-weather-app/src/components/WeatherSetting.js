@@ -103,6 +103,8 @@ const WeatherSetting = ({ cityName, handleCurrentPageChange, handleCurrentCityCh
         console.log(`儲存的地區資訊為：${locationName}`);
         handleCurrentPageChange("WeatherCard");
         handleCurrentCityChange(locationName);
+        localStorage.setItem('cityName', locationName);
+
     };
     // uncontrolled component example
     // const inputLocationRef = useRef(null);
