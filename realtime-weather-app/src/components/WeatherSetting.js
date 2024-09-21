@@ -93,40 +93,43 @@ const Save = styled.button`
   }
 `;
 
-const WeatherSetting = ({ handleCurrentPageChange }) => {
-    const [locationName, setLocationName] = useState('臺北市');
-    const inputLocationRef = useRef(null);
+const WeatherSetting = ({ cityName, handleCurrentPageChange, handleCurrentCityChange }) => {
+    const [locationName, setLocationName] = useState(cityName);
     const handleChange = (e) => {
         console.log(e.target.value);
         setLocationName(e.target.value);
     };
-    // const handleSave = () => {
-    //     console.log("location save:", locationName);
-    // };
     const handleSave = () => {
-        console.log("location save:", inputLocationRef.current.value);
+        console.log(`儲存的地區資訊為：${locationName}`);
+        handleCurrentPageChange("WeatherCard");
+        handleCurrentCityChange(locationName);
     };
+    // uncontrolled component example
+    // const inputLocationRef = useRef(null);
+    // const handleSave = () => {
+    //     console.log("location save:", inputLocationRef.current.value);
+    // };
 
     return (
         <WeatherSettingWrapper>
         <Title>設定</Title>
         <StyledLabel htmlFor="location">地區</StyledLabel>
         {/* uncontrolled component */}
-        <StyledSelect id="location" name="location" ref={inputLocationRef} defaultValue="臺南市">
+        {/* <StyledSelect id="location" name="location" ref={inputLocationRef} defaultValue="臺南市">
             {availableLocations.map(({ cityName }) => (
+            <option value={cityName} key={cityName}>
+                {cityName}
+            </option>
+            ))} */}
+        {/* </StyledSelect> */}
+        {/* controlled component */}
+        <StyledSelect id="location" name="location" onChange={handleChange} value={locationName}>
+             {availableLocations.map(({ cityName }) => (
             <option value={cityName} key={cityName}>
                 {cityName}
             </option>
             ))}
         </StyledSelect>
-        {/* controlled component */}
-        {/* <StyledSelect id="location" name="location" onChange={handleChange} value={locationName}>
-            {availableLocations.map(({ cityName }) => (
-            <option value={cityName} key={cityName}>
-                {cityName}
-            </option>
-            ))}
-        </StyledSelect> */}
 
         <ButtonGroup>
             <Back onClick={() => handleCurrentPageChange("WeatherCard")}>返回</Back>

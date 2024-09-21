@@ -5,6 +5,7 @@ import { getMoment } from './utils/helpers';
 import WeatherCard from './views/WeatherCard';
 import useWeatherAPI from './hooks/useWeatherAPI';
 import WeatherSetting from './components/WeatherSetting';
+import { findLocation } from './utils/helpers';
 
 const theme = {
   light: {
@@ -35,21 +36,28 @@ const Container = styled.div`
 `;
 
 const API_KEY = process.env.REACT_APP_CWB_API_AUTH_KEY
-const LOCATION_NAME = '臺北'
-const LOCATION_NAME_FORECAST = '臺北市';
-
 
 const App = () => {
   const [currentTheme, setCurrentTheme] = useState("dark");
+  const [currentCity, setCurrentCity] = useState('臺北市');
+  const currentLocation = useMemo(() => findLocation(currentCity), [
+    currentCity,
+  ]);
+  const { cityName, locationName, sunriseCityName } = currentLocation;
+  const moment = useMemo(() => getMoment(sunriseCityName), [sunriseCityName]);
+
   const [weatherElement, fetchData] = useWeatherAPI({
-    locationName: LOCATION_NAME,
-    cityName: LOCATION_NAME_FORECAST,
+    locationName: locationName,
+    cityName: cityName,
     authorizationKey: API_KEY,
   });
   const [currentPage, setCurrentPage] = useState('WeatherCard');
-  const moment = useMemo(() => getMoment(LOCATION_NAME_FORECAST), []);
+
   const handleCurrentPageChange = (currentPage) => {
     setCurrentPage(currentPage);
+  };
+  const handleCurrentCityChange = (currentCity) => {
+    setCurrentCity(currentCity);
   };
 
   useEffect(() => {
@@ -60,13 +68,17 @@ const App = () => {
     <ThemeProvider theme={theme[currentTheme]}>
       <Container>
         {currentPage === 'WeatherCard' && 
-        <WeatherCard 
+        <WeatherCard
+          cityName={cityName}
           weatherElement={weatherElement}
           moment={moment}
           fetchData={fetchData}
           handleCurrentPageChange={handleCurrentPageChange}/>}
         {currentPage === 'WeatherSetting' && 
-        <WeatherSetting handleCurrentPageChange={handleCurrentPageChange} />}
+        <WeatherSetting 
+        cityName={cityName}
+        handleCurrentPageChange={handleCurrentPageChange}
+        handleCurrentCityChange={handleCurrentCityChange}/>}
       </Container>
     </ThemeProvider>
   );
